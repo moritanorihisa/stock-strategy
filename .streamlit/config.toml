@@ -1,0 +1,7 @@
+[theme]
+base = "dark"
+
+[server]
+# Streamlit Community Cloud 向け設定
+headless = true
+enableXsrfProtection = true

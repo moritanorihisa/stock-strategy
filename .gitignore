@@ -1,0 +1,33 @@
+# ===== 絶対にGitHubに上げてはいけないファイル =====
+.streamlit/secrets.toml
+.env
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ===== 仮想環境 =====
+venv/
+.venv/
+env/
+
+# ===== キャッシュ =====
+.cache/
+*.pkl
+*.parquet
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== エディタ =====
+.vscode/
+.idea/
+*.swp

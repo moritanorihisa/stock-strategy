@@ -35,6 +35,18 @@ US_STOCK_INFO: dict[str, dict] = {
               "comment": "クラウドデータ基盤。AI時代のデータ分析需要の恩恵を受ける。"},
     "ORCL":  {"name": "Oracle",               "category": "AI×クラウドDB",   "nisa": 4,
               "comment": "クラウドDB転換が加速。AI向けデータベース需要で復活。"},
+    # AIインフラ・電力
+    "VRT":   {"name": "Vertiv Holdings",      "category": "AIインフラ冷却",   "nisa": 3,
+              "comment": "AIデータセンターの冷却・電源管理装置メーカー。AI電力需要の急拡大で注目。"},
+    "GE":    {"name": "GE Vernova",           "category": "AIインフラ電力",   "nisa": 4,
+              "comment": "発電インフラ大手。AIデータセンターの電力需要増大で電力設備が急拡大中。"},
+    "CEG":   {"name": "Constellation Energy", "category": "原子力・AI電力",   "nisa": 3,
+              "comment": "AIデータセンター向けに原子力電力を供給。クリーンエネルギー需要の恩恵を受ける。"},
+    # 宇宙通信
+    "ASTS":  {"name": "AST SpaceMobile",      "category": "衛星ブロードバンド","nisa": 1,
+              "comment": "スマホへ直接つながる衛星通信。上場間もない超高リスク・超高成長候補。"},
+    "RKLB":  {"name": "Rocket Lab",           "category": "小型ロケット",     "nisa": 1,
+              "comment": "SpaceXに次ぐ小型ロケット打ち上げ。宇宙ビジネス拡大の恩恵銘柄。"},
 }
 
 # ── 日本成長株の補足情報 ──────────────────────────────────────

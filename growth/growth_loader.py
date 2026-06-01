@@ -23,11 +23,18 @@ from datetime import date
 CACHE_DIR = Path(".cache")
 CACHE_DIR.mkdir(exist_ok=True)
 
-# ── 米国AI関連成長株 ──────────────────────────────────────────
+# ── 米国AI関連成長株（テーマ別に拡張）──────────────────────────
 US_AI_TICKERS = [
+    # AI大型株
     "NVDA", "MSFT", "GOOGL", "AMZN", "META",
-    "AMD",  "ARM",  "PLTR",  "TSM",  "AVGO",
-    "SMCI", "CRWD", "SNOW",  "ORCL",
+    # AI半導体
+    "AMD",  "TSM",  "AVGO",
+    # AIソフト・中型成長株
+    "ARM",  "PLTR", "SMCI", "CRWD", "SNOW", "ORCL",
+    # AIインフラ・電力
+    "VRT",  "GE",   "CEG",
+    # 宇宙通信・次世代インフラ
+    "ASTS", "RKLB",
 ]
 
 # ── 日本成長株（東証コード + .T）────────────────────────────────

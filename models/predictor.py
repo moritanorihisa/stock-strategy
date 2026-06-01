@@ -81,6 +81,26 @@ class RollingPredictor:
     ) -> np.ndarray:
         raise NotImplementedError
 
+    def predict_next_day(
+        self,
+        X: pd.DataFrame,
+        Y: pd.DataFrame,
+        x_next: np.ndarray,
+    ) -> np.ndarray:
+        """
+        最後の window 期間で学習し、x_next（翌営業日の特徴量）を予測する。
+
+        Parameters
+        ----------
+        X : 特徴量 DataFrame（学習用）
+        Y : ターゲット DataFrame（学習用）
+        x_next : shape (n_features,) の numpy 配列
+                 最新の米国ETFリターン（翌日の日本市場予測に使う）
+        """
+        X_train = X.iloc[-self.window :].values
+        Y_train = Y.iloc[-self.window :].values
+        return self._fit_predict_single(X_train, Y_train, x_next.reshape(1, -1))
+
 
 class SimpleLinearPredictor(RollingPredictor):
     """

@@ -18,6 +18,7 @@ from data.loader import (
     load_all,
     get_feature_columns,
     get_target_columns,
+    get_latest_us_returns,
     JP_SECTOR_ETFS,
     US_SECTOR_ETFS,
 )
@@ -141,8 +142,91 @@ if run_btn:
             # タブ1：今日の売買（初心者向け）
             # =========================================================
             with tab1:
+
+                # --- 翌営業日の予測（最新米国データを使ってリアルタイム予測）---
+                st.subheader("🔮 翌営業日の予測シグナル（最新データ）")
+                try:
+                    x_next_series, us_date = get_latest_us_returns()
+
+                    # 予測モデルを再構築して翌日を予測
+                    from models.predictor import PCAPredictor, SimpleLinearPredictor
+                    if model_name == "pca":
+                        predictor_obj = PCAPredictor(window=window, n_components=n_components, alpha=alpha)
+                    else:
+                        predictor_obj = SimpleLinearPredictor(window=window, alpha=alpha)
+
+                    X_all = df[feat_cols]
+                    Y_all = df[tgt_cols]
+
+                    # 特徴量の列順を学習データに合わせる
+                    x_next_aligned = x_next_series.reindex(feat_cols).fillna(0).values
+                    next_pred_arr   = predictor_obj.predict_next_day(X_all, Y_all, x_next_aligned)
+                    next_pred       = pd.Series(next_pred_arr, index=tgt_cols)
+
+                    next_scores      = next_pred.sort_values(ascending=False)
+                    next_buy_cols    = next_scores.iloc[:n_long].index.tolist()
+                    next_sell_cols   = next_scores.iloc[-n_short:].index.tolist() if allow_short else []
+
+                    # 翌営業日の日付を計算
+                    from pandas.tseries.offsets import BDay
+                    next_jp_date = (pd.Timestamp.today() + BDay(1)).strftime("%Y年%m月%d日")
+
+                    st.success(f"**{next_jp_date}（翌営業日）の推奨アクション**　※米国 {us_date} 終値データをもとに予測")
+
+                    next_cols_layout = st.columns(min(n_long, 3))
+                    for i, col in enumerate(next_buy_cols):
+                        info     = ticker_to_display(col)
+                        score    = next_scores[col]
+                        past_rets = actual_returns[col][actual_returns[col] > 0]
+                        exp_val  = past_rets.mean() * 100 if len(past_rets) > 0 else 0
+                        win_rate = (actual_returns[col] > 0).mean() * 100
+                        with next_cols_layout[i % len(next_cols_layout)]:
+                            st.markdown(f"""
+                            <div class="card-buy">
+                              <div class="big-code">🟢 {info['code']}</div>
+                              <div class="sector-name">{info['name']}</div>
+                              <hr style="border-color:#1a5c42;margin:8px 0">
+                              <b>予測スコア:</b> {score:.4f}<br>
+                              <b>過去平均期待値:</b> +{exp_val:.2f}%（保証ではありません）<br>
+                              <b>過去勝率:</b> {win_rate:.1f}%
+                            </div>
+                            """, unsafe_allow_html=True)
+
+                    # 今日やることリスト（翌営業日版）
+                    st.markdown(f"#### ✅ {next_jp_date} にやること")
+                    for i, col in enumerate(next_buy_cols, 1):
+                        info = ticker_to_display(col)
+                        st.markdown(f"""
+                        <div class="card-info">
+                          <b>買い {i}：{info['code']} {info['short']}</b><br>
+                          ① SBI証券アプリを開く<br>
+                          ② 銘柄コード「<b>{info['code']}</b>」を検索<br>
+                          ③ 朝 8:45〜8:55 に「<b>寄付成行</b>」で注文<br>
+                          ④ 14:50〜15:00 に「<b>引け成行</b>」で全売却
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                    # CSV出力（翌日版）
+                    next_csv_rows = []
+                    for col in next_buy_cols:
+                        info = ticker_to_display(col)
+                        next_csv_rows.append({"対象日":next_jp_date,"方向":"買い","証券コード":info["code"],
+                                              "銘柄名":info["name"],"注文種別":"寄付成行",
+                                              "買いタイミング":"8:45〜8:55","売りタイミング":"14:50〜15:00"})
+                    if next_csv_rows:
+                        next_csv = pd.DataFrame(next_csv_rows).to_csv(index=False).encode("utf-8-sig")
+                        st.download_button("📥 翌営業日の注文メモCSV", data=next_csv,
+                                           file_name=f"signal_next.csv", mime="text/csv")
+
+                except Exception as e:
+                    st.warning(f"翌営業日の予測取得に失敗しました: {e}\n\n米国市場が閉まっていない時間帯は予測できません。")
+
+                st.divider()
+
+                # --- 以下は過去の最終データ日のシグナル（参考表示）---
                 latest_pred = predictions.iloc[-1]
                 signal_date = predictions.index[-1].strftime("%Y年%m月%d日")
+                st.caption(f"※ 以下は過去データ最終日（{signal_date}）のシグナル（参考）")
                 scores      = latest_pred.sort_values(ascending=False)
 
                 buy_cols  = scores.iloc[:n_long].index.tolist()

@@ -161,3 +161,34 @@ def get_feature_columns(df: pd.DataFrame) -> list[str]:
 
 def get_target_columns(df: pd.DataFrame) -> list[str]:
     return [c for c in df.columns if c.startswith("JP_")]
+
+
+def get_latest_us_returns() -> tuple[pd.Series, str]:
+    """
+    翌営業日の日本市場予測に使う「最新の米国ETFリターン」を取得する。
+
+    仕組み:
+      米国市場の直近終値リターンを取得し、
+      翌営業日の日本市場予測の特徴量として返す。
+
+    Returns
+    -------
+    features : pd.Series  （列名は US_XXX_lag1 形式）
+    us_date  : str        （米国データの日付文字列）
+    """
+    tickers = list(US_SECTOR_ETFS.keys())
+    raw = yf.download(tickers, period="10d", auto_adjust=True, progress=False)
+    close = raw["Close"][tickers].dropna()
+
+    if len(close) < 2:
+        raise ValueError("米国ETFの直近データが取得できませんでした。")
+
+    # 最新日のリターン = (最新終値 - 前日終値) / 前日終値
+    latest_returns = close.pct_change().iloc[-1]
+    us_date = close.index[-1].strftime("%Y年%m月%d日")
+
+    # 特徴量名を学習データと合わせる（lag1 表記）
+    features = latest_returns.copy()
+    features.index = [f"US_{c}_lag1" for c in features.index]
+
+    return features, us_date

@@ -14,6 +14,7 @@ import plotly.express as px
 from datetime import datetime
 
 from auth import login_wall, logout_button
+from growth.growth_ui import render_growth_tab
 from data.loader import (
     load_all,
     get_feature_columns,
@@ -135,8 +136,8 @@ if run_btn:
                               n_long=n_long, n_short=n_short, allow_short=allow_short,
                               fee_rate=fee_rate, slippage_rate=slippage)
 
-            tab1, tab2, tab3, tab4 = st.tabs(
-                ["📅 今日の売買", "📈 バックテスト成績", "📖 戦略説明", "⚠️ 注意事項"])
+            tab1, tab2, tab3, tab4, tab5 = st.tabs(
+                ["📅 今日の売買", "📈 バックテスト成績", "📖 戦略説明", "⚠️ 注意事項", "🚀 AI成長株"])
 
             # =========================================================
             # タブ1：今日の売買（初心者向け）
@@ -461,6 +462,12 @@ if run_btn:
                 2. 紙取引で感覚をつかんだら**少額（1〜3万円程度）**で試す
                 3. 安定して成績が出てから徐々に金額を増やす
                 """)
+
+            # =========================================================
+            # タブ5：AI成長株スクリーナー（ETF戦略とは独立）
+            # =========================================================
+            with tab5:
+                render_growth_tab()
 
         except Exception as e:
             st.error(f"エラー: {e}")

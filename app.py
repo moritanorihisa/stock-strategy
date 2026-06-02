@@ -18,6 +18,7 @@ from growth.growth_ui import render_growth_tab
 from dashboard.dashboard_ui import render_dashboard_tab
 from dashboard.vix_widget import render_vix_card
 from dashboard.explanation import render_explanation_tab
+from dashboard.sector_heatmap import render_sector_heatmap_tab
 from utils.time_handler import get_analysis_label, get_display_date, is_after_market_close
 from data.loader import (
     load_all,
@@ -27,8 +28,10 @@ from data.loader import (
     JP_SECTOR_ETFS,
     US_SECTOR_ETFS,
 )
+from data.fear_greed import calculate_fear_greed_index, interpret_fear_greed
 from models.predictor import run_prediction
 from backtest.engine import run_backtest, get_today_signals
+from backtest.accuracy_tracker import calculate_accuracy_metrics, get_recent_accuracy, get_sector_accuracy
 
 # =============================================
 # 証券コード → 初心者向け日本語表記マッピング
@@ -130,9 +133,24 @@ def cached_predict(start, end, model, win, n_comp, alp):
 st.title(f"📊 {get_analysis_label()}")
 st.caption("参考: 中川慧ら「部分空間正則化付き主成分分析を用いた日米業種リードラグ投資戦略」（人工知能学会 FIN-036, 2026）")
 
-# VIX表示（常に表示）
+# マーケット指標表示（常に表示）
 st.divider()
-render_vix_card()
+col_vix, col_fg = st.columns(2)
+
+with col_vix:
+    render_vix_card()
+
+with col_fg:
+    st.markdown("### 😨/😊 Fear & Greed Index")
+    fg = calculate_fear_greed_index()
+    st.markdown(f"""
+    <div style="background:#1a1a2e; padding:20px; border-radius:10px; border-left:6px solid {fg['color']};">
+    <h1 style="color:{fg['color']};margin:0;">{fg['score']}</h1>
+    <p style="color:#aaa;margin:5px 0;">{fg['label']}</p>
+    <small>{interpret_fear_greed(fg['score'])}</small>
+    </div>
+    """, unsafe_allow_html=True)
+
 st.divider()
 
 if run_btn:
@@ -145,9 +163,10 @@ if run_btn:
                               n_long=n_long, n_short=n_short, allow_short=allow_short,
                               fee_rate=fee_rate, slippage_rate=slippage)
 
-            tab0, tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
+            tab0, tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
                 ["🏠 ダッシュボード", "📅 今日の売買", "📈 バックテスト成績",
-                 "📖 戦略説明", "💡 初心者向け解説", "⚠️ 注意事項", "🚀 AI成長株・日本株予測"])
+                 "📖 戦略説明", "💡 初心者向け解説", "✅ 精度検証",
+                 "🔥 セクターヒートマップ", "⚠️ 注意事項", "🚀 AI成長株・日本株予測"])
 
             # =========================================================
             # タブ0：総合ダッシュボード
@@ -452,7 +471,61 @@ if run_btn:
                 else:
                     st.info("先に「▶ 分析実行」をしてください。")
 
+            # =========================================================
+            # タブ5：予測精度検証
+            # =========================================================
             with tab5:
+                st.subheader("✅ 予測精度検証")
+                st.info("このモデルがどのくらい正確に予測できているかを検証します。")
+
+                # 全体的なメトリクス
+                metrics = calculate_accuracy_metrics(predictions, actual_returns)
+                col1, col2, col3, col4 = st.columns(4)
+                col1.metric("方向性的中率", f"{metrics['directional_accuracy']:.1f}%")
+                col2.metric("相関係数", f"{metrics['correlation']:.3f}")
+                col3.metric("トップ3的中率", f"{metrics['hit_rate_top3']:.1f}%")
+                col4.metric("平均誤差", f"{metrics['mean_absolute_error']:.3f}")
+
+                st.divider()
+
+                # 最近N日間の精度テーブル
+                st.markdown("### 📊 最近20日間の的中記録")
+                recent_acc = get_recent_accuracy(predictions, actual_returns, days=20)
+                st.dataframe(recent_acc, use_container_width=True, hide_index=True)
+
+                st.divider()
+
+                # セクター別精度
+                st.markdown("### 🎯 セクター別的中率ランキング")
+                sector_acc = get_sector_accuracy(predictions, actual_returns)
+                st.dataframe(sector_acc, use_container_width=True, hide_index=True)
+
+                with st.expander("📚 精度指標の説明"):
+                    st.markdown("""
+                    **方向性的中率**
+                    - 予測が上昇/下落の方向性を正しく予測できた割合
+                    - 50%以上なら、ランダムより優れている
+
+                    **相関係数**
+                    - 予測スコアと実際のリターンの相関
+                    - 1.0に近いほど完璧、0は関係なし、-1は逆相関
+
+                    **トップ3的中率**
+                    - 予測トップ3に選んだ銘柄が、実際のトップ3に含まれた割合
+                    - このモデルの最重要指標
+
+                    **平均誤差**
+                    - 予測値と実際の値の平均的なズレ
+                    - 小さいほど良い
+                    """)
+
+            # =========================================================
+            # タブ6：セクターヒートマップ
+            # =========================================================
+            with tab6:
+                render_sector_heatmap_tab(predictions)
+
+            with tab7:
                 st.subheader("⚠️ 必ずお読みください")
                 st.error("""
                 ### 重要な注意事項
@@ -487,9 +560,9 @@ if run_btn:
                 """)
 
             # =========================================================
-            # タブ6：AI成長株スクリーナー（ETF戦略とは独立）
+            # タブ8：AI成長株スクリーナー（ETF戦略とは独立）
             # =========================================================
-            with tab6:
+            with tab8:
                 render_growth_tab()
 
         except Exception as e:

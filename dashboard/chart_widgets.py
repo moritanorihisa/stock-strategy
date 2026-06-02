@@ -57,8 +57,8 @@ def render_mini_chart(ticker: str, name: str, days: int = 60) -> None:
     # 直近高値・安値ライン
     high = float(df["High"].max())
     low  = float(df["Low"].min())
-    fig.add_hline(y=high, line=dict(color="#ffffff22", dash="dot"), annotation_text="高値", annotation_font_size=9)
-    fig.add_hline(y=low,  line=dict(color="#ffffff22", dash="dot"), annotation_text="安値", annotation_font_size=9)
+    fig.add_hline(y=high, line=dict(color="rgba(255, 255, 255, 0.13)", dash="dot"), annotation_text="高値", annotation_font_size=9)
+    fig.add_hline(y=low,  line=dict(color="rgba(255, 255, 255, 0.13)", dash="dot"), annotation_text="安値", annotation_font_size=9)
 
     fig.update_layout(
         height=180,

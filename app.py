@@ -29,6 +29,10 @@ from data.loader import (
     US_SECTOR_ETFS,
 )
 from data.fear_greed import calculate_fear_greed_index, interpret_fear_greed
+from data.news_fetcher import render_news_section, get_market_sentiment
+from data.institutional_flow import analyze_institutional_sentiment, get_typical_institutional_moves
+from data.short_pressure import calculate_short_pressure, get_short_squeeeze_warning
+from data.earnings_calendar import render_earnings_calendar_tab, get_next_major_earnings
 from models.predictor import run_prediction
 from backtest.engine import run_backtest, get_today_signals
 from backtest.accuracy_tracker import calculate_accuracy_metrics, get_recent_accuracy, get_sector_accuracy
@@ -92,6 +96,10 @@ if not login_wall():
     st.stop()
 logout_button()
 
+# ログイン直後の自動分析実行フラグ
+if "auto_analyzed" not in st.session_state:
+    st.session_state.auto_analyzed = False
+
 # =============================================
 # サイドバー
 # =============================================
@@ -153,7 +161,11 @@ with col_fg:
 
 st.divider()
 
+# 自動実行フラグまたはボタンクリック時に実行
 if run_btn:
+    st.session_state.auto_analyzed = True
+
+if st.session_state.auto_analyzed:
     with st.spinner("分析中..."):
         try:
             df, predictions, feat_cols, tgt_cols = cached_predict(

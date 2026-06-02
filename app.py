@@ -15,6 +15,7 @@ from datetime import datetime
 
 from auth import login_wall, logout_button
 from growth.growth_ui import render_growth_tab
+from dashboard.dashboard_ui import render_dashboard_tab
 from data.loader import (
     load_all,
     get_feature_columns,
@@ -136,9 +137,15 @@ if run_btn:
                               n_long=n_long, n_short=n_short, allow_short=allow_short,
                               fee_rate=fee_rate, slippage_rate=slippage)
 
-            tab1, tab2, tab3, tab4, tab5 = st.tabs(
-                ["📅 今日の売買", "📈 バックテスト成績", "📖 戦略説明", "⚠️ 注意事項",
-                 "🚀 AI成長株・日本株予測"])
+            tab0, tab1, tab2, tab3, tab4, tab5 = st.tabs(
+                ["🏠 ダッシュボード", "📅 今日の売買", "📈 バックテスト成績",
+                 "📖 戦略説明", "⚠️ 注意事項", "🚀 AI成長株・日本株予測"])
+
+            # =========================================================
+            # タブ0：総合ダッシュボード
+            # =========================================================
+            with tab0:
+                render_dashboard_tab()
 
             # =========================================================
             # タブ1：今日の売買（初心者向け）

@@ -16,6 +16,9 @@ from datetime import datetime
 from auth import login_wall, logout_button
 from growth.growth_ui import render_growth_tab
 from dashboard.dashboard_ui import render_dashboard_tab
+from dashboard.vix_widget import render_vix_card
+from dashboard.explanation import render_explanation_tab
+from utils.time_handler import get_analysis_label, get_display_date, is_after_market_close
 from data.loader import (
     load_all,
     get_feature_columns,
@@ -124,8 +127,13 @@ def cached_predict(start, end, model, win, n_comp, alp):
 # =============================================
 # メイン
 # =============================================
-st.title("📊 日米業種リードラグ戦略 研究ツール")
+st.title(f"📊 {get_analysis_label()}")
 st.caption("参考: 中川慧ら「部分空間正則化付き主成分分析を用いた日米業種リードラグ投資戦略」（人工知能学会 FIN-036, 2026）")
+
+# VIX表示（常に表示）
+st.divider()
+render_vix_card()
+st.divider()
 
 if run_btn:
     with st.spinner("分析中..."):
@@ -137,9 +145,9 @@ if run_btn:
                               n_long=n_long, n_short=n_short, allow_short=allow_short,
                               fee_rate=fee_rate, slippage_rate=slippage)
 
-            tab0, tab1, tab2, tab3, tab4, tab5 = st.tabs(
+            tab0, tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
                 ["🏠 ダッシュボード", "📅 今日の売買", "📈 バックテスト成績",
-                 "📖 戦略説明", "⚠️ 注意事項", "🚀 AI成長株・日本株予測"])
+                 "📖 戦略説明", "💡 初心者向け解説", "⚠️ 注意事項", "🚀 AI成長株・日本株予測"])
 
             # =========================================================
             # タブ0：総合ダッシュボード
@@ -438,6 +446,13 @@ if run_btn:
             # タブ4：注意事項
             # =========================================================
             with tab4:
+                # 初心者向け解説タブ
+                if 'predictions' in locals() and 'feat_cols' in locals():
+                    render_explanation_tab(predictions, predictions.iloc[-1])
+                else:
+                    st.info("先に「▶ 分析実行」をしてください。")
+
+            with tab5:
                 st.subheader("⚠️ 必ずお読みください")
                 st.error("""
                 ### 重要な注意事項
@@ -472,9 +487,9 @@ if run_btn:
                 """)
 
             # =========================================================
-            # タブ5：AI成長株スクリーナー（ETF戦略とは独立）
+            # タブ6：AI成長株スクリーナー（ETF戦略とは独立）
             # =========================================================
-            with tab5:
+            with tab6:
                 render_growth_tab()
 
         except Exception as e:

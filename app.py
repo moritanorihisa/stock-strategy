@@ -175,10 +175,11 @@ if st.session_state.auto_analyzed:
                               n_long=n_long, n_short=n_short, allow_short=allow_short,
                               fee_rate=fee_rate, slippage_rate=slippage)
 
-            tab0, tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(
+            tab0, tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12 = st.tabs(
                 ["🏠 ダッシュボード", "📅 今日の売買", "📈 バックテスト成績",
                  "📖 戦略説明", "💡 初心者向け解説", "✅ 精度検証",
-                 "🔥 セクターヒートマップ", "⚠️ 注意事項", "🚀 AI成長株・日本株予測"])
+                 "🔥 セクターヒートマップ", "📰 ニュース", "🏢 機関投資家動向",
+                 "📉 売り圧力・空売り", "📅 決算カレンダー", "⚠️ 注意事項", "🚀 AI成長株・日本株予測"])
 
             # =========================================================
             # タブ0：総合ダッシュボード
@@ -537,7 +538,91 @@ if st.session_state.auto_analyzed:
             with tab6:
                 render_sector_heatmap_tab(predictions)
 
+            # =========================================================
+            # タブ7：ニュース・関連情報
+            # =========================================================
             with tab7:
+                st.subheader("📰 本日の関連ニュース")
+                render_news_section()
+
+            # =========================================================
+            # タブ8：機関投資家動向
+            # =========================================================
+            with tab8:
+                st.subheader("🏢 機関投資家の動向分析")
+                inst = analyze_institutional_sentiment()
+
+                col1, col2, col3, col4 = st.columns(4)
+                col1.metric("買い圧力", f"{inst['bullish_score']}%")
+                col2.metric("売り圧力", f"{inst['bearish_score']}%")
+                col3.markdown(f"<div style='text-align:center;'><h3>{inst['net_position']}</h3></div>", unsafe_allow_html=True)
+                col4.metric("更新時刻", inst['timestamp'].split()[1])
+
+                st.divider()
+
+                # 各指標の詳細
+                st.markdown("### 📊 詳細指標")
+                indicator_df = pd.DataFrame([
+                    {"指標": k, "スコア": f"{v:.1f}%"}
+                    for k, v in inst['indicators'].items()
+                ])
+                st.dataframe(indicator_df, use_container_width=True, hide_index=True)
+
+                st.divider()
+
+                # 時間帯別行動パターン
+                st.markdown("### ⏰ 現在の時間帯別行動パターン")
+                st.info(get_typical_institutional_moves())
+
+            # =========================================================
+            # タブ9：売り圧力・空売り予測
+            # =========================================================
+            with tab9:
+                st.subheader("📉 売り圧力・空売り分析")
+                short = calculate_short_pressure()
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("売り圧力スコア", f"{short['short_pressure']}/100")
+                with col2:
+                    st.markdown(f"<h3 style='color:{short['risk_color']};'>{short['short_level']}</h3>", unsafe_allow_html=True)
+
+                st.divider()
+
+                # ショートスクイーズの警告
+                st.markdown("### ⚠️ ショートスクイーズ警告")
+                st.warning(get_short_squeeeze_warning())
+
+                st.divider()
+
+                # 指標の詳細
+                st.markdown("### 📊 売り圧力の構成要素")
+                short_df = pd.DataFrame([
+                    {"要因": k, "強度": f"{v:.1f}%"}
+                    for k, v in short['indicators'].items()
+                ])
+                st.dataframe(short_df, use_container_width=True, hide_index=True)
+
+                with st.expander("📚 売り圧力指標の説明"):
+                    st.markdown("""
+                    **高い売り圧力（70%以上）の意味**
+                    - 空売りが積み上がっている
+                    - わずかなポジティブニュースで大急騰の可能性
+                    - ショートスクイーズのリスク
+
+                    **低い売り圧力（30%以下）の意味**
+                    - 売り圧力が少ない
+                    - 相対的に安定した相場
+                    - 調整売りの可能性は低い
+                    """)
+
+            # =========================================================
+            # タブ10：決算カレンダー
+            # =========================================================
+            with tab10:
+                render_earnings_calendar_tab()
+
+            with tab11:
                 st.subheader("⚠️ 必ずお読みください")
                 st.error("""
                 ### 重要な注意事項
@@ -572,9 +657,9 @@ if st.session_state.auto_analyzed:
                 """)
 
             # =========================================================
-            # タブ8：AI成長株スクリーナー（ETF戦略とは独立）
+            # タブ12：AI成長株スクリーナー（ETF戦略とは独立）
             # =========================================================
-            with tab8:
+            with tab12:
                 render_growth_tab()
 
         except Exception as e:
